@@ -1,0 +1,76 @@
+import Database from 'better-sqlite3-sqlcipher';
+import path from 'path';
+import { app }  from 'electron';
+import { whoisTable } from './whois_info_table';
+import type {WhoisInfo} from './whois_info_table'
+
+
+class DB {
+  dbPath:string = ""
+  db: Database.Database|null = null;
+  constructor() {
+    const userDataPath = app.getPath('userData');
+    console.log("userDataPath:", userDataPath)
+    this.dbPath = path.join(userDataPath, 'app.db');
+    this.db = null;
+  }
+
+  // initialize(passwd: string): boolean {
+  initialize(): boolean {
+    try {
+      this.db = new Database(this.dbPath);
+      // this.db.pragma(`KEY='${passwd}'`);
+      // this.db.pragma('cipher_compatibility = 4'); // 使用 SQLCipher 4 默认配置
+      this.ensureTables();
+      return true;
+    } catch (error) {
+      console.error('Database initialization failed:', error);
+      return false;
+    }
+  }
+
+  // 验证密码是否正确
+  // verifyPassword(passwd: string):boolean {
+  verifyPassword():boolean {
+    return true
+    // try {
+    //   const testDb = new Database(this.dbPath);
+    //   testDb.pragma(`KEY='${passwd}'`);
+    //   testDb.pragma('quick_check'); // 快速检查密码是否正确
+    //   testDb.close();
+    //   return true;
+    // } catch {
+    //   return false;
+    // }
+  }
+  // 更改密码
+  // changePassword(passwd:string):any {
+  //   if (!this.db) throw new Error('Database not initialized');
+  //   return this.db.pragma(`REKEY='${passwd}'`);
+  // }
+
+  ensureTables():void {
+    this.db?.exec(`${whoisTable}`)
+  }
+
+  // 用户操作
+  addWhoisInfo(info:WhoisInfo) {
+    const stmt = this.db?.prepare('INSERT INTO whois_info (domain, status, statusText, createTime, expireTime, updateTime, ' +
+      'registerName,registerCountry, registerStateProvince,dnsServer,concat,raw, lastQueryTime) VALUES (?)');
+    return stmt?.run(info.domain,info.status, info.statusText, info.createTime,info.expireTime, info.updateTime,
+      info.registerName, info.registerCountry, info.registerStateProvince, info.dnsServer, info.concat, info.raw,info.lastQueryTime).lastInsertRowid;
+  }
+
+  getWhoisInfo(domain:string) {
+    return this.db?.prepare('SELECT * FROM whois_info where domain = ?').get(domain)
+  }
+
+  close():void {
+    if (this.db) {
+      this.db.close();
+      this.db = null;
+    }
+  }
+}
+
+export default new DB();
