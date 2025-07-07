@@ -924,3 +924,47 @@ export function createWhoisInfo(domain: string, data: any): WhoisInfo {
   }
   return info;
 }
+
+export class whoisQueryQueue {
+  private readonly poolLimit: number;
+  private readonly items: string[];
+  private readonly iteratorFn: (item: string) => Promise<WhoisInfo>;
+  private executing: Set<Promise<WhoisInfo>> = new Set();
+  private stoped:boolean = false
+
+  constructor(poolLimit: number, items: string[], iteratorFn: (item: string) => Promise<WhoisInfo>) {
+    this.poolLimit = poolLimit;
+    this.items = items;
+    this.iteratorFn = iteratorFn;
+  }
+
+  async run( cb:(info:WhoisInfo)=>void):Promise<boolean> {
+    for (const item of this.items) {
+      if (this.stoped) {
+        throw new Error("stoped")
+      }
+      const p = this.iteratorFn(item);
+      this.executing.add(p);
+      // 当poolLimit值小于或等于总任务个数时，进行并发控制
+      const clean = () => this.executing.delete(p);
+      await p.then(res => {
+        cb(res)
+      }).catch(() => {
+        cb(createWhoisInfo(item, null))
+      }).finally(clean)
+
+      if (this.executing.size >= this.poolLimit) {
+        try{
+          await Promise.race(this.executing);
+        } catch(e) {
+          console.log("whoisQueryQueue.run.Promise.race:", e)
+        }
+      }
+    }
+    return true
+  }
+
+  stop() {
+    this.stoped = true
+  }
+}

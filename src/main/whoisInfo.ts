@@ -7,6 +7,7 @@ import { WhoisInfoStatus } from 'src/interfaces';
 import db from 'src/main/db/db';
 import {createWhoisInfo} from 'src/utils/domain';
 import crypto from 'crypto';
+// import { sleep } from 'src/utils/utils';
 
 function  getWhoisInfo(domain: string): Promise<WhoisInfo> {
   return new Promise<WhoisInfo>((resolve, reject) => {
@@ -22,7 +23,7 @@ function  getWhoisInfo(domain: string): Promise<WhoisInfo> {
             data = createWhoisInfo(domain, res);
             console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().addWhoisInfo(${domain})):`, db.whoisInfo().addWhoisInfo(data));
           }
-          whoisInfo.fromCache = false
+          data.fromCache = false
           resolve(data);
         })
         .catch(e => {
@@ -83,6 +84,9 @@ function addWhoisTask(domains: string[]): WhoisTask {
   // }
   return true
 }
+
+
+
 
 export function setupWhois() {
   ipcMainManager.handle(IpcEvents.whoisLookup, (_: IpcMainInvokeEvent, name: string) =>
