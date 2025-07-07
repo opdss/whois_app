@@ -61,6 +61,7 @@ const currentTask = ref<WhoisTask|undefined>(undefined)
 const whoisQueue = ref<whoisQueryQueue|null>(null)
 const loading = ref<boolean>(false);
 
+
 const processWhois = async (domainArr:string[]) => {
   loading.value = true
   const limit = await window.myApi.getSetting('backendQueryLimit').catch((e) => console.log(e));
@@ -101,11 +102,11 @@ const processWhois = async (domainArr:string[]) => {
           message: `已完成共${domainArr.length}个域名的whois查询`,
           color: 'primary',
         })
-      }).catch(e => {
+      }).catch(() => {
         $q.notify({
           position: 'top',
-          message: `查询终止:`+e.toString(),
-          color: 'red',
+          message: `查询终止`,
+          color: 'warning',
         })
       }).finally(()=>{
         loading.value = false
@@ -122,6 +123,7 @@ const processWhois = async (domainArr:string[]) => {
 }
 
 const onSubmit = async () => {
+
   const domainArr = parseDomainStr(domains.value);
   if (domainArr.length == 0) {
     $q.notify({
@@ -131,6 +133,7 @@ const onSubmit = async () => {
     })
     return;
   }
+
   data.value = []
   await processWhois(domainArr)
 };
@@ -139,6 +142,7 @@ const onCancel = () => {
   if (whoisQueue.value) {
     whoisQueue.value.stop()
   }
+  whoisQueue.value = null
   loading.value = false
 }
 

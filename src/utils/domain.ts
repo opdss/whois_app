@@ -881,10 +881,15 @@ export function createWhoisInfo(domain: string, data: any): WhoisInfo {
     lastQueryTime: new Date().getTime(),
     fromCache: false,
   };
+  console.log("ggggcreationDatecreationDatecreationDate", data)
   if (!data) {
     return info;
   }
-  if (!!data['creationDate'] || !!data['createdDate'] || !!data['registrationTime']) {
+  if (
+      !!data['creationDate'] ||
+      !!data['createdDate'] ||
+      !!data['registrationTime'] ||
+      (!!data['domainStatus'] && !!data['registrant'])) {
     info.status =WhoisInfoStatus.registered
     info.statusText = "已注册"
   } else {

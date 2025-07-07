@@ -32,6 +32,7 @@ import { exportFile, useQuasar} from 'quasar'
 import type {QTableColumn} from 'quasar'
 import type { WhoisInfo } from 'src/interfaces';
 import { WhoisInfoStatus } from 'src/interfaces';
+import { fmtDate } from 'src/utils/utils';
 
 const $q = useQuasar()
 
@@ -128,7 +129,12 @@ const columns:QTableColumn[]  = [
   },
   {  label: '最后查询时间',
     name: 'lastQueryTime',
-    field: 'lastQueryTime',
+    field: (row) => {
+        if (row['lastQueryTime']) {
+          return fmtDate(row['lastQueryTime'], 8)
+        }
+        return "-"
+    },
   }
 ]
 

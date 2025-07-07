@@ -7,6 +7,7 @@ import { WhoisInfoStatus } from 'src/interfaces';
 import db from 'src/main/db/db';
 import {createWhoisInfo} from 'src/utils/domain';
 import crypto from 'crypto';
+import { whoisJsonRdap } from 'src/main/whois/rdap';
 // import { sleep } from 'src/utils/utils';
 
 function  getWhoisInfo(domain: string): Promise<WhoisInfo> {
@@ -14,19 +15,17 @@ function  getWhoisInfo(domain: string): Promise<WhoisInfo> {
     const whoisInfo = db.whoisInfo().getWhoisInfo(domain);
     console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().getWhoisInfo(${domain})):`, whoisInfo)
     const toQuery = function(data:WhoisInfo|null) {
-      whoisJson(domain)
-        .then((res) => {
+      if (domain.includes(".app") || domain.includes(".dev")) {
+        whoisJsonRdap(domain).then(res => {
           if (data) {
-            data.tryNum = 0
-            console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().updateWhoisInfo(${domain})):`, db.whoisInfo().updateWhoisInfo(data));
+            console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().updateWhoisInfo(${domain})):`, db.whoisInfo().updateWhoisInfo(res));
           } else {
-            data = createWhoisInfo(domain, res);
-            console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().addWhoisInfo(${domain})):`, db.whoisInfo().addWhoisInfo(data));
+            console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().addWhoisInfo(${domain})):`, db.whoisInfo().addWhoisInfo(res));
           }
+          data = res
           data.fromCache = false
           resolve(data);
-        })
-        .catch(e => {
+        }).catch((e) => {
           console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().addWhoisInfo(${domain})): err => `, e);
           if (data) {
             data.tryNum++
@@ -37,13 +36,39 @@ function  getWhoisInfo(domain: string): Promise<WhoisInfo> {
             console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().addWhoisInfo(${domain})):`, db.whoisInfo().addWhoisInfo(data));
           }
           reject(e as Error)
-        });
+        })
+      } else {
+        whoisJson(domain)
+          .then((res) => {
+            if (data) {
+              data = createWhoisInfo(domain, res)
+              console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().updateWhoisInfo(${domain})):`, db.whoisInfo().updateWhoisInfo(data));
+            } else {
+              data = createWhoisInfo(domain, res);
+              console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().addWhoisInfo(${domain})):`, db.whoisInfo().addWhoisInfo(data));
+            }
+            data.fromCache = false
+            resolve(data);
+          })
+          .catch(e => {
+            console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().addWhoisInfo(${domain})): err => `, e);
+            if (data) {
+              data.tryNum++
+              console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().updateWhoisInfo(${domain})):`, db.whoisInfo().updateWhoisInfo(data));
+            } else {
+              data = createWhoisInfo(domain, null);
+              data.tryNum++
+              console.log(`main.whoisInfo.getWhoisInfo(db.whoisInfo().addWhoisInfo(${domain})):`, db.whoisInfo().addWhoisInfo(data));
+            }
+            reject(e as Error)
+          });
+      }
     }
     if (!whoisInfo) {
       toQuery(whoisInfo)
       return
     }
-    if ((whoisInfo.status == WhoisInfoStatus.queryError || whoisInfo.status == WhoisInfoStatus.unregistered) && (whoisInfo.tryNum < 3 || (whoisInfo.lastQueryTime + (86400000*7)) < new Date().getTime()) ) {
+    if ((whoisInfo.status == WhoisInfoStatus.queryError || whoisInfo.status == WhoisInfoStatus.unregistered) && (whoisInfo.tryNum < 7 || (whoisInfo.lastQueryTime + (86400000*7)) < new Date().getTime()) ) {
       toQuery(whoisInfo)
       return
     }
