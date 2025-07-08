@@ -1,7 +1,7 @@
 import { domain as domainRdap } from 'node-rdap';
 import type { WhoisInfo } from 'src/interfaces';
 import { WhoisInfoStatus } from 'src/interfaces';
-import { createWhoisInfo, DomainStatus } from 'src/utils/domain';
+import { createWhoisInfo, DomainStatus, DomainStatusRdap } from 'src/utils/domain';
 
 export function whoisJsonRdap(domain: string): Promise<WhoisInfo> {
   return new Promise<WhoisInfo>((resolve, reject) => {
@@ -56,7 +56,7 @@ export function whoisJsonRdap(domain: string): Promise<WhoisInfo> {
 function processStatus(status: string[]):string {
   if (status && status.length > 0) {
     status.map(s => {
-      return DomainStatus[s] || s
+      return DomainStatusRdap[s] || DomainStatus[s] || s
     }).join(",")
   }
   return ""

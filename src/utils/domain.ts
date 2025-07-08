@@ -844,6 +844,28 @@ export const DomainStatus: Record<string, string> = {
   pendingVerification: '注册信息正在确认',
 };
 
+export const DomainStatusRdap: Record<string, string> = {
+  "ok":"正常状态",
+  "validated":"正在确认",
+  "renew prohibited":"禁止续费",
+  "update prohibited":"禁止修改",
+  "transfer prohibited":"禁止转移",
+  "delete prohibited":"禁止删除",
+  "proxy" :"代理",
+  "private" :"私有",
+  "removed":"已删除",
+  "obscured":"信息隐藏",
+  "associated":"已关联",
+  "active":"正常使用",
+  "inactive":"非激活状态",
+  "locked":"已锁定",
+  "pending create":"创建待处理",
+  "pending renew":"续费待处理",
+  "pending transfer":"转移待处理",
+  "pending update":"更新待处理",
+  "pending delete":"删除待处理"
+}
+
 export const DomainSuffix: string[] = ['com', 'cn', 'app', 'dev', 'ai', 'io'];
 
 export const parseDomainStr = (domainStr: string): string[] => {
