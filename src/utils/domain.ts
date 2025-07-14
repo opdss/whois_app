@@ -1,6 +1,7 @@
 import type { WhoisInfo } from 'src/interfaces';
 import { WhoisInfoStatus } from 'src/interfaces';
 import { fmtDate } from 'src/utils/utils';
+import { delay } from 'src/utils/utils';
 
 export interface DomainChar {
   title: string;
@@ -826,45 +827,40 @@ export const DomainChars: DomainChar[] = [
 
 export const DomainStatus: Record<string, string> = {
   ok: '正常状态',
+  active: '正常使用',
   inactive: '非激活状态',
+  validated: '正在确认',
+  proxy: '代理',
+  private: '私有',
+  removed: '已删除',
+  obscured: '信息隐藏',
+  associated: '已关联',
+  locked: '已锁定',
+  redemptionPeriod: '赎回期',
   autoRenewPeriod: '自动续费',
   renewPeriod: '在续费中',
+  pendingCreate: '创建待处理',
+  pendingRenew: '续费待处理',
+  pendingDelete: '正在删除',
+  pendingUpdate: '正在更新',
+  pendingTransfer: '正在转移',
+  deleteProhibited: '禁止删除',
   clientDeleteProhibited: '禁止删除',
   serverDeleteProhibited: '禁止删除',
+  updateProhibited: '禁止修改',
   clientUpdateProhibited: '禁止修改',
   serverUpdateProhibited: '禁止修改',
-  pendingDelete: '正在删除',
-  pendingTransfer: '正在转移',
+  transferProhibited: '禁止转移',
   clientTransferProhibited: '禁止转移',
   serverTransferProhibited: '禁止转移',
+  renewProhibited: '禁止续费',
   clientRenewProhibited: '禁止续费',
   serverRenewProhibited: '禁止续费',
+  hold: '停止解析',
   clientHold: '停止解析',
   serverHold: '停止解析',
   pendingVerification: '注册信息正在确认',
 };
-
-export const DomainStatusRdap: Record<string, string> = {
-  "ok":"正常状态",
-  "validated":"正在确认",
-  "renew prohibited":"禁止续费",
-  "update prohibited":"禁止修改",
-  "transfer prohibited":"禁止转移",
-  "delete prohibited":"禁止删除",
-  "proxy" :"代理",
-  "private" :"私有",
-  "removed":"已删除",
-  "obscured":"信息隐藏",
-  "associated":"已关联",
-  "active":"正常使用",
-  "inactive":"非激活状态",
-  "locked":"已锁定",
-  "pending create":"创建待处理",
-  "pending renew":"续费待处理",
-  "pending transfer":"转移待处理",
-  "pending update":"更新待处理",
-  "pending delete":"删除待处理"
-}
 
 export const DomainSuffix: string[] = ['com', 'cn', 'app', 'dev', 'ai', 'io'];
 
@@ -903,26 +899,26 @@ export function createWhoisInfo(domain: string, data: any): WhoisInfo {
     lastQueryTime: new Date().getTime(),
     fromCache: false,
   };
-  console.log("ggggcreationDatecreationDatecreationDate", data)
   if (!data) {
     return info;
   }
   if (
-      !!data['creationDate'] ||
-      !!data['createdDate'] ||
-      !!data['registrationTime'] ||
-      (!!data['domainStatus'] && !!data['registrant'])) {
-    info.status =WhoisInfoStatus.registered
-    info.statusText = "已注册"
+    !!data['creationDate'] ||
+    !!data['createdDate'] ||
+    !!data['registrationTime'] ||
+    (!!data['domainStatus'] && !!data['registrant'])
+  ) {
+    info.status = WhoisInfoStatus.registered;
+    info.statusText = '已注册';
   } else {
-    info.status = WhoisInfoStatus.unregistered
-    info.statusText = "未注册"
+    info.status = WhoisInfoStatus.unregistered;
+    info.statusText = '未注册';
   }
   //保留域名
   if (info.status == WhoisInfoStatus.unregistered) {
-    if (data?.organisation == "Internet Assigned Numbers Authority") {
-      info.status = WhoisInfoStatus.reserve
-      info.statusText = "保留域名"
+    if (data?.organisation == 'Internet Assigned Numbers Authority') {
+      info.status = WhoisInfoStatus.reserve;
+      info.statusText = '保留域名';
     }
   }
   info.raw = data;
@@ -957,41 +953,49 @@ export class whoisQueryQueue {
   private readonly items: string[];
   private readonly iteratorFn: (item: string) => Promise<WhoisInfo>;
   private executing: Set<Promise<WhoisInfo>> = new Set();
-  private stoped:boolean = false
+  private stoped: boolean = false;
 
-  constructor(poolLimit: number, items: string[], iteratorFn: (item: string) => Promise<WhoisInfo>) {
+  constructor(
+    poolLimit: number,
+    items: string[],
+    iteratorFn: (item: string) => Promise<WhoisInfo>,
+  ) {
     this.poolLimit = poolLimit;
     this.items = items;
     this.iteratorFn = iteratorFn;
   }
 
-  async run( cb:(info:WhoisInfo)=>void):Promise<boolean> {
+  async run(cb: (info: WhoisInfo) => void): Promise<boolean> {
     for (const item of this.items) {
       if (this.stoped) {
-        throw new Error("stoped")
+        throw new Error('stoped');
       }
+      await delay(1000);
       const p = this.iteratorFn(item);
       this.executing.add(p);
       // 当poolLimit值小于或等于总任务个数时，进行并发控制
       const clean = () => this.executing.delete(p);
-      await p.then(res => {
-        cb(res)
-      }).catch(() => {
-        cb(createWhoisInfo(item, null))
-      }).finally(clean)
+      await p
+        .then((res) => {
+          cb(res);
+        })
+        .catch(() => {
+          cb(createWhoisInfo(item, null));
+        })
+        .finally(clean);
 
       if (this.executing.size >= this.poolLimit) {
-        try{
+        try {
           await Promise.race(this.executing);
-        } catch(e) {
-          console.log("whoisQueryQueue.run.Promise.race:", e)
+        } catch (e) {
+          console.log('whoisQueryQueue.run.Promise.race:', e);
         }
       }
     }
-    return true
+    return true;
   }
 
   stop() {
-    this.stoped = true
+    this.stoped = true;
   }
 }

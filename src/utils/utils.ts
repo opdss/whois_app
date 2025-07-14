@@ -1,6 +1,11 @@
-export function fmtDate(timestamp:any, timeZone:number=0):string {
+export function fmtDate(timestamp: any, timeZone: number = 0): string {
   timeZone = timeZone || 0;
-  let date = timestamp && typeof timestamp != 'object' ? new Date(timestamp) : typeof timestamp == 'object' ? timestamp : new Date();
+  let date =
+    timestamp && typeof timestamp != 'object'
+      ? new Date(timestamp)
+      : typeof timestamp == 'object'
+        ? timestamp
+        : new Date();
   if (date == 'Invalid Date') {
     return '获取失败';
   }
@@ -10,30 +15,27 @@ export function fmtDate(timestamp:any, timeZone:number=0):string {
   date = new Date(date.getTime() + offset + 3600000 * timeZone);
   const s1 = '-';
   const s2 = ':';
-  const pad = (num:number):string => {
-    return num < 10 ? '0' + num.toString() : num+"";
+  const pad = (num: number): string => {
+    return num < 10 ? '0' + num.toString() : num + '';
   };
-  return date.getFullYear()
-    + s1 + pad(date.getMonth() + 1)
-    + s1 + pad(date.getDate())
-    + ' '
-    + pad(date.getHours())
-    + s2 + pad(date.getMinutes())
-    + s2 + pad(date.getSeconds());
-}
-
-
-export function sleep(sec:number) {
-  const exitTime = new Date().getTime() + (sec*1000);
-  while (true) {
-    if (new Date().getTime() > exitTime)
-      return;
-  }
+  return (
+    date.getFullYear() +
+    s1 +
+    pad(date.getMonth() + 1) +
+    s1 +
+    pad(date.getDate()) +
+    ' ' +
+    pad(date.getHours()) +
+    s2 +
+    pad(date.getMinutes()) +
+    s2 +
+    pad(date.getSeconds())
+  );
 }
 
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
   let lastCall = 0;
   return (...args: Parameters<T>) => {
@@ -48,8 +50,8 @@ export class RateLimiter {
   private requests: Map<string, number[]> = new Map();
 
   constructor(
-    private readonly limit: number,  // 允许的最大请求数
-    private readonly windowMs: number  // 时间窗口(毫秒)
+    private readonly limit: number, // 允许的最大请求数
+    private readonly windowMs: number, // 时间窗口(毫秒)
   ) {}
 
   check(key: string): boolean {
@@ -57,7 +59,7 @@ export class RateLimiter {
     const timestamps = this.requests.get(key) || [];
 
     // 移除时间窗口外的记录
-    const validTimestamps = timestamps.filter(ts => now - ts < this.windowMs);
+    const validTimestamps = timestamps.filter((ts) => now - ts < this.windowMs);
 
     if (validTimestamps.length >= this.limit) {
       return false; // 超过限制
@@ -67,4 +69,8 @@ export class RateLimiter {
     this.requests.set(key, validTimestamps);
     return true; // 允许请求
   }
+}
+
+export function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
