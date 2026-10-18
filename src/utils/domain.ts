@@ -862,7 +862,7 @@ export const DomainStatus: Record<string, string> = {
   pendingVerification: '注册信息正在确认',
 };
 
-export const DomainSuffix: string[] = ['com', 'cn', 'app', 'dev', 'ai', 'io'];
+export const DomainSuffix: string[] = ['com', 'cn', 'app', 'dev', 'ai', 'io', 'si'];
 
 export const parseDomainStr = (domainStr: string): string[] => {
   const spl = ',';
@@ -905,6 +905,7 @@ export function createWhoisInfo(domain: string, data: any): WhoisInfo {
   if (
     !!data['creationDate'] ||
     !!data['createdDate'] ||
+    !!data['created'] ||
     !!data['registrationTime'] ||
     (!!data['domainStatus'] && !!data['registrant'])
   ) {
@@ -925,15 +926,16 @@ export function createWhoisInfo(domain: string, data: any): WhoisInfo {
   //获取被注册的信息
   if (info.status == WhoisInfoStatus.registered) {
     info.createTime = fmtDate(
-      data['creationDate'] || data['createdDate'] || data['registrationTime'],
+      data['creationDate'] || data['createdDate'] || data['registrationTime'] || data['created'],
     );
     info.expireTime = fmtDate(
       data['registryExpiryDate'] ||
         data['registrarRegistrationExpirationDate'] ||
         data['expirationTime'] ||
+        data['expire'] ||
         '',
     );
-    info.dnsServer = data['nameServer'] || '';
+    info.dnsServer = data['nameServer'] || data['nameserver'] || '';
     info.registerName = data['registrar'] || data['sponsoringRegistrar'] || '';
     info.registerCountry = data['registrantCountry'] || '';
     info.registerStateProvince = data['registrantStateProvince'] || '';
